@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Analytics from '@/lib/analytics';
 import { invoke } from '@tauri-apps/api/core';
 import { useRecordingState } from '@/contexts/RecordingStateContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 
 interface SidebarItem {
@@ -81,6 +82,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Extract fetchMeetings as a reusable function
   const fetchMeetings = React.useCallback(async () => {
@@ -116,7 +118,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const baseItems: SidebarItem[] = [
     {
       id: 'meetings',
-      title: 'Meeting Notes',
+      title: t('sidebar.meetings'),
       type: 'folder' as const,
       children: [
         ...meetings.map(meeting => ({ id: meeting.id, title: meeting.title, type: 'file' as const }))

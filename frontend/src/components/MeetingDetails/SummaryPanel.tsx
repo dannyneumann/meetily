@@ -7,6 +7,9 @@ import { EmptyStateSummary } from '@/components/EmptyStateSummary';
 import { ModelConfig } from '@/components/ModelSettingsModal';
 import { SummaryGeneratorButtonGroup } from './SummaryGeneratorButtonGroup';
 import { SummaryUpdaterButtonGroup } from './SummaryUpdaterButtonGroup';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatDuration } from '@/lib/utils';
+import { Clock, Calendar } from 'lucide-react';
 import Analytics from '@/lib/analytics';
 import { RefObject } from 'react';
 
@@ -15,6 +18,7 @@ interface SummaryPanelProps {
     id: string;
     title: string;
     created_at: string;
+    duration?: number;
   };
   meetingTitle: string;
   onTitleChange: (title: string) => void;
@@ -26,6 +30,7 @@ interface SummaryPanelProps {
   isSaving: boolean;
   onSaveAll: () => Promise<void>;
   onCopySummary: () => Promise<void>;
+  onExportObsidian: () => Promise<void>;
   onOpenFolder: () => Promise<void>;
   aiSummary: Summary | null;
   summaryStatus: 'idle' | 'processing' | 'summarizing' | 'regenerating' | 'completed' | 'error';
@@ -62,6 +67,7 @@ export function SummaryPanel({
   isSaving,
   onSaveAll,
   onCopySummary,
+  onExportObsidian,
   onOpenFolder,
   aiSummary,
   summaryStatus,
@@ -85,6 +91,7 @@ export function SummaryPanel({
   isModelConfigLoading = false,
   onOpenModelSettings
 }: SummaryPanelProps) {
+  const { t } = useTranslation();
   const isSummaryLoading = summaryStatus === 'processing' || summaryStatus === 'summarizing' || summaryStatus === 'regenerating';
 
   return (
@@ -128,6 +135,7 @@ export function SummaryPanel({
                 isDirty={isTitleDirty || (summaryRef.current?.isDirty || false)}
                 onSave={onSaveAll}
                 onCopy={onCopySummary}
+                onExportObsidian={onExportObsidian}
                 onFind={() => {
                   // TODO: Implement find in summary functionality
                   console.log('Find in summary clicked');
@@ -138,6 +146,35 @@ export function SummaryPanel({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Meeting Metadata Bar */}
+      <div className="px-6 py-2 bg-gray-50/50 border-b border-gray-100 flex items-center gap-6 text-xs text-gray-500">
+        <div className="flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5" />
+          <span>
+            {new Date(meeting.created_at).toLocaleDateString(undefined, { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            })}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" />
+          <span>
+            {new Date(meeting.created_at).toLocaleTimeString(undefined, { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            })}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-gray-400">Duration:</span>
+          <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+            {formatDuration(meeting.duration)}
+          </span>
+        </div>
       </div>
 
       {isSummaryLoading ? (
@@ -199,10 +236,10 @@ export function SummaryPanel({
         <div className="flex-1 overflow-y-auto min-h-0">
           {summaryResponse && (
             <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg p-4 max-h-1/3 overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-2">Meeting Summary</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('summary.session_summary')}</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded-lg shadow-sm">
-                  <h4 className="font-medium mb-1">Key Points</h4>
+                  <h4 className="font-medium mb-1">{t('summary.meeting_notes')}</h4>
                   <ul className="list-disc pl-4">
                     {summaryResponse.summary.key_points.blocks.map((block, i) => (
                       <li key={i} className="text-sm">{block.content}</li>
@@ -210,7 +247,7 @@ export function SummaryPanel({
                   </ul>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm mt-4">
-                  <h4 className="font-medium mb-1">Action Items</h4>
+                  <h4 className="font-medium mb-1">{t('summary.immediate_action_items')}</h4>
                   <ul className="list-disc pl-4">
                     {summaryResponse.summary.action_items.blocks.map((block, i) => (
                       <li key={i} className="text-sm">{block.content}</li>
@@ -218,7 +255,7 @@ export function SummaryPanel({
                   </ul>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm mt-4">
-                  <h4 className="font-medium mb-1">Decisions</h4>
+                  <h4 className="font-medium mb-1">{t('summary.key_items_decisions')}</h4>
                   <ul className="list-disc pl-4">
                     {summaryResponse.summary.decisions.blocks.map((block, i) => (
                       <li key={i} className="text-sm">{block.content}</li>
@@ -226,7 +263,7 @@ export function SummaryPanel({
                   </ul>
                 </div>
                 <div className="bg-white p-4 rounded-lg shadow-sm mt-4">
-                  <h4 className="font-medium mb-1">Main Topics</h4>
+                  <h4 className="font-medium mb-1">{t('summary.main_topics')}</h4>
                   <ul className="list-disc pl-4">
                     {summaryResponse.summary.main_topics.blocks.map((block, i) => (
                       <li key={i} className="text-sm">{block.content}</li>
@@ -236,7 +273,7 @@ export function SummaryPanel({
               </div>
               {summaryResponse.raw_summary ? (
                 <div className="mt-4">
-                  <h4 className="font-medium mb-1">Full Summary</h4>
+                  <h4 className="font-medium mb-1">{t('summary.title')}</h4>
                   <p className="text-sm whitespace-pre-wrap">{summaryResponse.raw_summary}</p>
                 </div>
               ) : null}

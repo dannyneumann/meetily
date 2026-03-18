@@ -59,6 +59,20 @@ interface ConfigContextType {
   selectedLanguage: string;
   setSelectedLanguage: (lang: string) => void;
 
+  // UI Language preference
+  uiLanguage: string;
+  setUiLanguage: (lang: string) => void;
+
+  // Summary/AI Language preference
+  summaryLanguage: string;
+  setSummaryLanguage: (lang: string) => void;
+
+  // Obsidian Export
+  obsidianVaultPath: string | null;
+  setObsidianVaultPath: (path: string | null) => void;
+  obsidianFolderPath: string;
+  setObsidianFolderPath: (path: string) => void;
+
   // UI preferences
   showConfidenceIndicator: boolean;
   toggleConfidenceIndicator: (checked: boolean) => void;
@@ -143,6 +157,40 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
       return saved || 'auto';
     }
     return 'auto';
+  });
+
+  // UI Language preference state
+  const [uiLanguage, setUiLanguage] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('uiLanguage');
+      return saved || 'en';
+    }
+    return 'en';
+  });
+
+  // Summary Language preference state
+  const [summaryLanguage, setSummaryLanguage] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('summaryLanguage');
+      return saved || 'en';
+    }
+    return 'en';
+  });
+
+  // Obsidian Vault Path state
+  const [obsidianVaultPath, setObsidianVaultPath] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('obsidianVaultPath');
+    }
+    return null;
+  });
+
+  // Obsidian Folder Path (relative to vault) state
+  const [obsidianFolderPath, setObsidianFolderPath] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('obsidianFolderPath') || 'Meetily';
+    }
+    return 'Meetily';
   });
 
   // UI preferences state
@@ -482,6 +530,38 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const handleSetUiLanguage = useCallback((lang: string) => {
+    setUiLanguage(lang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('uiLanguage', lang);
+    }
+  }, []);
+
+  const handleSetSummaryLanguage = useCallback((lang: string) => {
+    setSummaryLanguage(lang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('summaryLanguage', lang);
+    }
+  }, []);
+
+  const handleSetObsidianVaultPath = useCallback((path: string | null) => {
+    setObsidianVaultPath(path);
+    if (typeof window !== 'undefined') {
+      if (path) {
+        localStorage.setItem('obsidianVaultPath', path);
+      } else {
+        localStorage.removeItem('obsidianVaultPath');
+      }
+    }
+  }, []);
+
+  const handleSetObsidianFolderPath = useCallback((path: string) => {
+    setObsidianFolderPath(path);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('obsidianFolderPath', path);
+    }
+  }, []);
+
   const value: ConfigContextType = useMemo(() => ({
     modelConfig,
     setModelConfig,
@@ -495,6 +575,14 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     setSelectedDevices,
     selectedLanguage,
     setSelectedLanguage: handleSetSelectedLanguage,
+    uiLanguage,
+    setUiLanguage: handleSetUiLanguage,
+    summaryLanguage,
+    setSummaryLanguage: handleSetSummaryLanguage,
+    obsidianVaultPath,
+    setObsidianVaultPath: handleSetObsidianVaultPath,
+    obsidianFolderPath,
+    setObsidianFolderPath: handleSetObsidianFolderPath,
     showConfidenceIndicator,
     toggleConfidenceIndicator,
     betaFeatures,
@@ -517,6 +605,14 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     selectedDevices,
     selectedLanguage,
     handleSetSelectedLanguage,
+    uiLanguage,
+    handleSetUiLanguage,
+    summaryLanguage,
+    handleSetSummaryLanguage,
+    obsidianVaultPath,
+    handleSetObsidianVaultPath,
+    obsidianFolderPath,
+    handleSetObsidianFolderPath,
     showConfidenceIndicator,
     toggleConfidenceIndicator,
     betaFeatures,

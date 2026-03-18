@@ -81,11 +81,12 @@ impl SummaryService {
         model_name: String,
         custom_prompt: String,
         template_id: String,
+        language: String,
     ) {
         let start_time = Instant::now();
         info!(
-            "Starting background processing for meeting_id: {}",
-            meeting_id
+            "Starting background processing for meeting_id: {}, language: {}",
+            meeting_id, language
         );
 
         // Register cancellation token for this meeting
@@ -237,6 +238,7 @@ impl SummaryService {
             custom_openai_top_p,
             app_data_dir.as_ref(),
             Some(&cancellation_token),
+            &language,
         )
         .await;
 

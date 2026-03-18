@@ -106,6 +106,7 @@ class TranscriptRequest(BaseModel):
     chunk_size: Optional[int] = 5000
     overlap: Optional[int] = 1000
     custom_prompt: Optional[str] = "Generate a summary of the meeting transcript."
+    language: Optional[str] = "en"
 
 class SummaryProcessor:
     """Handles the processing of summaries in a thread-safe way"""
@@ -120,7 +121,7 @@ class SummaryProcessor:
             logger.error(f"Failed to initialize SummaryProcessor: {str(e)}", exc_info=True)
             raise
 
-    async def process_transcript(self, text: str, model: str, model_name: str, chunk_size: int = 5000, overlap: int = 1000, custom_prompt: str = "Generate a summary of the meeting transcript.") -> tuple:
+    async def process_transcript(self, text: str, model: str, model_name: str, chunk_size: int = 5000, overlap: int = 1000, custom_prompt: str = "Generate a summary of the meeting transcript.", language: str = "en") -> tuple:
         """Process a transcript text"""
         try:
             if not text:
@@ -139,14 +140,15 @@ class SummaryProcessor:
             if step_size <= 0:
                 chunk_size = overlap + 1  # Adjust chunk_size to ensure positive step
 
-            logger.info(f"Processing transcript of length {len(text)} with chunk_size={chunk_size}, overlap={overlap}")
+            logger.info(f"Processing transcript of length {len(text)} with chunk_size={chunk_size}, overlap={overlap}, language={language}")
             num_chunks, all_json_data = await self.transcript_processor.process_transcript(
                 text=text,
                 model=model,
                 model_name=model_name,
                 chunk_size=chunk_size,
                 overlap=overlap,
-                custom_prompt=custom_prompt
+                custom_prompt=custom_prompt,
+                language=language
             )
             logger.info(f"Successfully processed transcript into {num_chunks} chunks")
 
@@ -216,10 +218,10 @@ async def delete_meeting(data: DeleteMeetingRequest):
         logger.error(f"Error deleting meeting: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-async def process_transcript_background(process_id: str, transcript: TranscriptRequest, custom_prompt: str):
+async def process_transcript_background(process_id: str, transcript: TranscriptRequest, custom_prompt: str, language: str = "en"):
     """Background task to process transcript"""
     try:
-        logger.info(f"Starting background processing for process_id: {process_id}")
+        logger.info(f"Starting background processing for process_id: {process_id}, language: {language}")
         
         # Early validation for common issues
         if not transcript.text or not transcript.text.strip():
@@ -238,7 +240,8 @@ async def process_transcript_background(process_id: str, transcript: TranscriptR
             model_name=transcript.model_name,
             chunk_size=transcript.chunk_size,
             overlap=transcript.overlap,
-            custom_prompt=custom_prompt
+            custom_prompt=custom_prompt,
+            language=language
         )
 
         # Create final summary structure by aggregating chunk results
@@ -347,13 +350,15 @@ async def process_transcript_api(
         )
 
         custom_prompt = transcript.custom_prompt
+        language = transcript.language or "en"
 
         # Start background processing
         background_tasks.add_task(
             process_transcript_background,
             process_id,
             transcript,
-            custom_prompt
+            custom_prompt,
+            language
         )
 
         return JSONResponse({

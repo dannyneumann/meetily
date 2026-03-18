@@ -4,9 +4,12 @@ import { useEffect, useState, useRef } from "react"
 import { Switch } from "./ui/switch"
 import { FolderOpen } from "lucide-react"
 import { invoke } from "@tauri-apps/api/core"
+import { toast } from "sonner"
 import Analytics from "@/lib/analytics"
 import AnalyticsConsentSwitch from "./AnalyticsConsentSwitch"
 import { useConfig, NotificationSettings } from "@/contexts/ConfigContext"
+import { useTranslation } from "@/hooks/useTranslation"
+import { open } from '@tauri-apps/plugin-dialog'
 
 export function PreferenceSettings() {
   const {
@@ -14,9 +17,16 @@ export function PreferenceSettings() {
     storageLocations,
     isLoadingPreferences,
     loadPreferences,
-    updateNotificationSettings
+    updateNotificationSettings,
+    uiLanguage,
+    setUiLanguage,
+    obsidianVaultPath,
+    setObsidianVaultPath,
+    obsidianFolderPath,
+    setObsidianFolderPath
   } = useConfig();
 
+  const { t } = useTranslation();
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [previousNotificationsEnabled, setPreviousNotificationsEnabled] = useState<boolean | null>(null);
@@ -133,6 +143,23 @@ export function PreferenceSettings() {
     }
   };
 
+  const handleSelectObsidianVault = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: 'Select Obsidian Vault Folder'
+      });
+      if (selected && typeof selected === 'string') {
+        setObsidianVaultPath(selected);
+        toast.success('Obsidian Vault path updated');
+      }
+    } catch (error) {
+      console.error('Failed to select Obsidian vault:', error);
+      toast.error('Failed to select folder');
+    }
+  };
+
   // Show loading only if we're actually loading and don't have cached data
   if (isLoadingPreferences && !notificationSettings && !storageLocations) {
     return <div className="max-w-2xl mx-auto p-6">Loading Preferences...</div>
@@ -148,12 +175,32 @@ export function PreferenceSettings() {
 
   return (
     <div className="space-y-6">
+      {/* UI Language Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('settings.ui_language')}</h3>
+            <p className="text-sm text-gray-600">{t('settings.ui_language_description')}</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <select
+              value={uiLanguage}
+              onChange={(e) => setUiLanguage(e.target.value)}
+              className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Notifications Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Notifications</h3>
-            <p className="text-sm text-gray-600">Enable or disable notifications of start and end of meeting</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('settings.notifications')}</h3>
+            <p className="text-sm text-gray-600">{t('settings.notifications_description')}</p>
           </div>
           <Switch checked={notificationsEnabledValue} onCheckedChange={setNotificationsEnabled} />
         </div>
@@ -161,45 +208,15 @@ export function PreferenceSettings() {
 
       {/* Data Storage Locations Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Storage Locations</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('settings.data_storage')}</h3>
         <p className="text-sm text-gray-600 mb-6">
-          View and access where Meetily stores your data
+          {t('settings.data_storage_description')}
         </p>
 
         <div className="space-y-4">
-          {/* Database Location */}
-          {/* <div className="p-4 border rounded-lg bg-gray-50">
-            <div className="font-medium mb-2">Database</div>
-            <div className="text-sm text-gray-600 mb-3 break-all font-mono text-xs">
-              {storageLocations?.database || 'Loading...'}
-            </div>
-            <button
-              onClick={() => handleOpenFolder('database')}
-              className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
-            >
-              <FolderOpen className="w-4 h-4" />
-              Open Folder
-            </button>
-          </div> */}
-
-          {/* Models Location */}
-          {/* <div className="p-4 border rounded-lg bg-gray-50">
-            <div className="font-medium mb-2">Whisper Models</div>
-            <div className="text-sm text-gray-600 mb-3 break-all font-mono text-xs">
-              {storageLocations?.models || 'Loading...'}
-            </div>
-            <button
-              onClick={() => handleOpenFolder('models')}
-              className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
-            >
-              <FolderOpen className="w-4 h-4" />
-              Open Folder
-            </button>
-          </div> */}
-
           {/* Recordings Location */}
           <div className="p-4 border rounded-lg bg-gray-50">
-            <div className="font-medium mb-2">Meeting Recordings</div>
+            <div className="font-medium mb-2">{t('settings.meeting_recordings')}</div>
             <div className="text-sm text-gray-600 mb-3 break-all font-mono text-xs">
               {storageLocations?.recordings || 'Loading...'}
             </div>
@@ -208,14 +225,58 @@ export function PreferenceSettings() {
               className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
             >
               <FolderOpen className="w-4 h-4" />
-              Open Folder
+              {t('settings.open_folder')}
             </button>
+          </div>
+
+          {/* Obsidian Vault Location */}
+          <div className="p-4 border rounded-lg bg-gray-50">
+            <div className="font-medium mb-2">Obsidian Vault</div>
+            <p className="text-xs text-gray-500 mb-4">Set your vault path and destination folder to enable structured exports.</p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Vault Path</label>
+                <div className="text-sm text-gray-600 mb-2 break-all font-mono text-xs p-2 bg-white border rounded">
+                  {obsidianVaultPath || 'No vault selected'}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSelectObsidianVault}
+                    className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                  >
+                    <FolderOpen className="w-4 h-4" />
+                    {obsidianVaultPath ? 'Change Vault' : 'Select Vault'}
+                  </button>
+                  {obsidianVaultPath && (
+                    <button
+                      onClick={() => setObsidianVaultPath(null)}
+                      className="px-3 py-2 text-sm border border-red-200 text-red-600 rounded-md hover:bg-red-50 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Folder within Vault (relative)</label>
+                <input
+                  type="text"
+                  value={obsidianFolderPath}
+                  onChange={(e) => setObsidianFolderPath(e.target.value)}
+                  placeholder="e.g. Meetings or Inbox/Work"
+                  className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="mt-1 text-[10px] text-gray-500 italic">Folders will be created automatically if they don't exist.</p>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="mt-4 p-3 bg-blue-50 rounded-md">
           <p className="text-xs text-blue-800">
-            <strong>Note:</strong> Database and models are stored together in your application data directory for unified management.
+            <strong>Note:</strong> {t('settings.note_unified_storage')}
           </p>
         </div>
       </div>

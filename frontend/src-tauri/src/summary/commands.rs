@@ -175,15 +175,19 @@ pub async fn api_process_transcript<R: Runtime>(
     _overlap: Option<i32>,
     custom_prompt: Option<String>,
     template_id: Option<String>,
+    language: Option<String>,
     _auth_token: Option<String>,
 ) -> Result<ProcessTranscriptResponse, String> {
     use uuid::Uuid;
 
     let m_id = meeting_id.unwrap_or_else(|| format!("meeting-{}", Uuid::new_v4()));
+    let final_language = language.unwrap_or_else(|| "en".to_string());
+    
     log_info!(
-        "api_process_transcript (native) called for meeting_id: {}, model: {}",
+        "api_process_transcript (native) called for meeting_id: {}, model: {}, language: {}",
         &m_id,
-        &model
+        &model,
+        &final_language
     );
 
     let pool = state.db_manager.pool().clone();
@@ -227,6 +231,7 @@ pub async fn api_process_transcript<R: Runtime>(
             model_name,
             final_prompt,
             final_template_id,
+            final_language,
         )
         .await;
     });

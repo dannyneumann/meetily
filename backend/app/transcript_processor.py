@@ -84,7 +84,7 @@ class TranscriptProcessor:
         logger.info("TranscriptProcessor initialized.")
         self.db = DatabaseManager()
         self.active_clients = []  # Track active Ollama client sessions
-    async def process_transcript(self, text: str, model: str, model_name: str, chunk_size: int = 5000, overlap: int = 1000, custom_prompt: str = "") -> Tuple[int, List[str]]:
+    async def process_transcript(self, text: str, model: str, model_name: str, chunk_size: int = 5000, overlap: int = 1000, custom_prompt: str = "", language: str = "en") -> Tuple[int, List[str]]:
         """
         Process transcript text into chunks and generate structured summaries for each chunk using an AI model.
 
@@ -95,6 +95,7 @@ class TranscriptProcessor:
             chunk_size: The size of each text chunk.
             overlap: The overlap between consecutive chunks.
             custom_prompt: A custom prompt to use for the AI model.
+            language: The language for the output summary.
 
         Returns:
             A tuple containing:
@@ -102,11 +103,16 @@ class TranscriptProcessor:
             - A list of JSON strings, where each string is the summary of a chunk.
         """
 
-        logger.info(f"Processing transcript (length {len(text)}) with model provider={model}, model_name={model_name}, chunk_size={chunk_size}, overlap={overlap}")
+        logger.info(f"Processing transcript (length {len(text)}) with model provider={model}, model_name={model_name}, language={language}")
 
         all_json_data = []
         agent = None # Define agent variable
         llm = None # Define llm variable
+        
+        # Define localized prompt parts
+        prompt_instruction = "Given the following meeting transcript chunk, extract the relevant information according to the required JSON structure. If a specific section (like Critical Deadlines) has no relevant information in this chunk, return an empty list for its 'blocks'. Ensure the output is only the JSON data."
+        if language == "de":
+            prompt_instruction = "Basierend auf dem folgenden Ausschnitt des Besprechungsprotokolls extrahiere die relevanten Informationen gemäß der erforderlichen JSON-Struktur. Wenn ein bestimmter Abschnitt (wie 'Critical Deadlines') keine relevanten Informationen in diesem Ausschnitt enthält, gib eine leere Liste für seine 'blocks' zurück. Stelle sicher, dass die Ausgabe nur die JSON-Daten enthält. BITTE ERSTELLE DIE INHALTE AUF DEUTSCH."
 
         try:
             # Select and initialize the AI model and agent
@@ -171,7 +177,7 @@ class TranscriptProcessor:
                     # Run the agent to get the structured summary for the chunk
                     if model != "ollama":
                         summary_result = await agent.run(
-                            f"""Given the following meeting transcript chunk, extract the relevant information according to the required JSON structure. If a specific section (like Critical Deadlines) has no relevant information in this chunk, return an empty list for its 'blocks'. Ensure the output is only the JSON data.
+                            f"""{prompt_instruction}
 
                             IMPORTANT: Block types must be one of: 'text', 'bullet', 'heading1', 'heading2'
                             - Use 'text' for regular paragraphs
@@ -197,7 +203,7 @@ class TranscriptProcessor:
                     )
                     else:
                         logger.info(f"Using Ollama model: {model_name} and chunk size: {chunk_size} with overlap: {overlap}")
-                        response = await self.chat_ollama_model(model_name, chunk, custom_prompt)
+                        response = await self.chat_ollama_model(model_name, chunk, custom_prompt, language)
                         
                         # Check if response is already a SummaryResponse object or a string that needs validation
                         if isinstance(response, SummaryResponse):
@@ -232,11 +238,15 @@ class TranscriptProcessor:
             logger.error(f"Error during transcript processing: {str(e)}", exc_info=True)
             raise
     
-    async def chat_ollama_model(self, model_name: str, transcript: str, custom_prompt: str):
+    async def chat_ollama_model(self, model_name: str, transcript: str, custom_prompt: str, language: str = "en"):
+        prompt_instruction = "Given the following meeting transcript chunk, extract the relevant information according to the required JSON structure. If a specific section (like Critical Deadlines) has no relevant information in this chunk, return an empty list for its 'blocks'. Ensure the output is only the JSON data."
+        if language == "de":
+            prompt_instruction = "Basierend auf dem folgenden Ausschnitt des Besprechungsprotokolls extrahiere die relevanten Informationen gemäß der erforderlichen JSON-Struktur. Wenn ein bestimmter Abschnitt (wie 'Critical Deadlines') keine relevanten Informationen in diesem Ausschnitt enthält, gib eine leere Liste für seine 'blocks' zurück. Stelle sicher, dass die Ausgabe nur die JSON-Daten enthält. BITTE ERSTELLE DIE INHALTE AUF DEUTSCH."
+
         message = {
         'role': 'system',
         'content': f'''
-        Given the following meeting transcript chunk, extract the relevant information according to the required JSON structure. If a specific section (like Critical Deadlines) has no relevant information in this chunk, return an empty list for its 'blocks'. Ensure the output is only the JSON data.
+        {prompt_instruction}
 
         Transcript Chunk:
             ---

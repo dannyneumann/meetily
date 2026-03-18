@@ -1,0 +1,44 @@
+{
+  "settings": {
+    "title": "Einstellungen",
+    "preferences": "Präferenzen",
+    "notifications": "Benachrichtigungen",
+    "notifications_description": "Aktivieren oder deaktivieren Sie Benachrichtigungen zum Start und Ende der Besprechung",
+    "ui_language": "UI-Sprache",
+    "ui_language_description": "Wählen Sie Ihre bevorzugte Sprache für die Benutzeroberfläche",
+    "data_storage": "Datenspeicherorte",
+    "data_storage_description": "Ansehen und Zugreifen auf den Speicherort Ihrer Daten",
+    "open_folder": "Ordner öffnen",
+    "meeting_recordings": "Besprechungsaufzeichnungen",
+    "note_unified_storage": "Hinweis: Datenbank und Modelle werden gemeinsam in Ihrem Anwendungsdatenverzeichnis für eine einheitliche Verwaltung gespeichert."
+  },
+  "sidebar": {
+    "home": "Start",
+    "meetings": "Besprechungen",
+    "record": "Aufnehmen",
+    "settings": "Einstellungen",
+    "help": "Hilfe"
+  },
+  "recording": {
+    "start": "Aufnahme starten",
+    "stop": "Aufnahme stoppen",
+    "pause": "Pause",
+    "resume": "Fortsetzen",
+    "recording": "Aufnahme...",
+    "paused": "Pausiert",
+    "recording_in_progress": "Aufnahme läuft..."
+  },
+  "summary": {
+    "title": "KI-Zusammenfassung",
+    "generate": "Zusammenfassung generieren",
+    "generating": "Generiere Zusammenfassung...",
+    "session_summary": "Besprechungszusammenfassung",
+    "critical_deadlines": "Kritische Termine",
+    "key_items_decisions": "Wichtige Punkte & Entscheidungen",
+    "immediate_action_items": "Sofortige Aktionspunkte",
+    "next_steps": "Nächste Schritte",
+    "meeting_notes": "Besprechungsnotizen",
+    "main_topics": "Hauptthemen",
+    "people": "Teilnehmer"
+  }
+}

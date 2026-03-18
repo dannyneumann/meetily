@@ -30,3 +30,23 @@ export function isOllamaNotInstalledError(errorMessage: string): boolean {
 
   return patterns.some(pattern => lowerError.includes(pattern));
 }
+
+/**
+ * Formats a duration in seconds to a human-readable string (HH:MM:SS or MM:SS)
+ * @param seconds - Duration in seconds
+ * @returns Formatted string
+ */
+export function formatDuration(seconds: number | undefined): string {
+  if (seconds === undefined || seconds === null) return '--:--';
+  
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  
+  return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}

@@ -1,0 +1,44 @@
+{
+  "settings": {
+    "title": "Settings",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "notifications_description": "Enable or disable notifications of start and end of meeting",
+    "ui_language": "UI Language",
+    "ui_language_description": "Select your preferred language for the user interface",
+    "data_storage": "Data Storage Locations",
+    "data_storage_description": "View and access where Meetily stores your data",
+    "open_folder": "Open Folder",
+    "meeting_recordings": "Meeting Recordings",
+    "note_unified_storage": "Note: Database and models are stored together in your application data directory for unified management."
+  },
+  "sidebar": {
+    "home": "Home",
+    "meetings": "Meetings",
+    "record": "Record",
+    "settings": "Settings",
+    "help": "Help"
+  },
+  "recording": {
+    "start": "Start Recording",
+    "stop": "Stop Recording",
+    "pause": "Pause",
+    "resume": "Resume",
+    "recording": "Recording...",
+    "paused": "Paused",
+    "recording_in_progress": "Recording in progress..."
+  },
+  "summary": {
+    "title": "AI Summary",
+    "generate": "Generate Summary",
+    "generating": "Generating summary...",
+    "session_summary": "Session Summary",
+    "critical_deadlines": "Critical Deadlines",
+    "key_items_decisions": "Key Items & Decisions",
+    "immediate_action_items": "Immediate Action Items",
+    "next_steps": "Next Steps",
+    "meeting_notes": "Meeting Notes",
+    "main_topics": "Main Topics",
+    "people": "People"
+  }
+}

@@ -65,7 +65,7 @@ export default function PageContent({
   const { serverAddress } = useSidebar();
 
   // Get model config from ConfigContext
-  const { modelConfig, setModelConfig } = useConfig();
+  const { modelConfig, setModelConfig, obsidianVaultPath, obsidianFolderPath } = useConfig();
 
   // Custom hooks
   const meetingData = useMeetingData({ meeting, summaryData, onMeetingUpdated });
@@ -128,6 +128,8 @@ export default function PageContent({
     meetingTitle: meetingData.meetingTitle,
     aiSummary: meetingData.aiSummary,
     blockNoteSummaryRef: meetingData.blockNoteSummaryRef,
+    obsidianVaultPath: obsidianVaultPath,
+    obsidianFolderPath: obsidianFolderPath,
   });
 
   const meetingOperations = useMeetingOperations({
@@ -204,6 +206,7 @@ export default function PageContent({
           isSaving={meetingData.isSaving}
           onSaveAll={meetingData.saveAllChanges}
           onCopySummary={copyOperations.handleCopySummary}
+          onExportObsidian={copyOperations.handleExportObsidian}
           onOpenFolder={meetingOperations.handleOpenMeetingFolder}
           aiSummary={meetingData.aiSummary}
           summaryStatus={summaryGeneration.summaryStatus}

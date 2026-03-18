@@ -6,9 +6,10 @@ import { toast } from 'sonner';
 import { ModelConfig, ModelSettingsModal } from '@/components/ModelSettingsModal';
 import { Switch } from './ui/switch';
 import { useConfig } from '@/contexts/ConfigContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface SummaryModelSettingsProps {
-  refetchTrigger?: number; // Change this to trigger refetch
+  refetchTrigger?: number;
 }
 
 export function SummaryModelSettings({ refetchTrigger }: SummaryModelSettingsProps) {
@@ -20,14 +21,20 @@ export function SummaryModelSettings({ refetchTrigger }: SummaryModelSettingsPro
     ollamaEndpoint: null
   });
 
-  const { isAutoSummary, toggleIsAutoSummary } = useConfig();
+  const { 
+    isAutoSummary, 
+    toggleIsAutoSummary, 
+    uiLanguage, 
+    setUiLanguage, 
+    summaryLanguage, 
+    setSummaryLanguage 
+  } = useConfig();
+  const { t } = useTranslation();
 
-  // Reusable fetch function
   const fetchModelConfig = useCallback(async () => {
     try {
       const data = await invoke('api_get_model_config') as any;
       if (data && data.provider !== null) {
-        // Fetch API key if not included and provider requires it
         if (data.provider !== 'ollama' && data.provider !== 'builtin-ai' && !data.apiKey) {
           try {
             const apiKeyData = await invoke('api_get_api_key', {
@@ -38,7 +45,6 @@ export function SummaryModelSettings({ refetchTrigger }: SummaryModelSettingsPro
             console.error('Failed to fetch API key:', err);
           }
         }
-        // Fetch Custom OpenAI config if that's the active provider
         if (data.provider === 'custom-openai') {
           try {
             const customConfig = (await invoke('api_get_custom_openai_config')) as any;
@@ -50,7 +56,6 @@ export function SummaryModelSettings({ refetchTrigger }: SummaryModelSettingsPro
               data.maxTokens = customConfig.maxTokens || null;
               data.temperature = customConfig.temperature || null;
               data.topP = customConfig.topP || null;
-              // For custom-openai, model field should match customOpenAIModel
               data.model = customConfig.model || data.model;
             }
           } catch (err) {
@@ -65,39 +70,30 @@ export function SummaryModelSettings({ refetchTrigger }: SummaryModelSettingsPro
     }
   }, []);
 
-  // Fetch on mount
   useEffect(() => {
     fetchModelConfig();
   }, [fetchModelConfig]);
 
-  // Refetch when trigger changes (optional external control)
   useEffect(() => {
     if (refetchTrigger !== undefined && refetchTrigger > 0) {
       fetchModelConfig();
     }
   }, [refetchTrigger, fetchModelConfig]);
 
-  // Listen for model config updates from other components
   useEffect(() => {
     const setupListener = async () => {
       const { listen } = await import('@tauri-apps/api/event');
       const unlisten = await listen<ModelConfig>('model-config-updated', (event) => {
-        console.log('SummaryModelSettings received model-config-updated event:', event.payload);
         setModelConfig(event.payload);
       });
-
       return unlisten;
     };
 
     let cleanup: (() => void) | undefined;
     setupListener().then(fn => cleanup = fn);
-
-    return () => {
-      cleanup?.();
-    };
+    return () => cleanup?.();
   }, []);
 
-  // Save handler
   const handleSaveModelConfig = async (config: ModelConfig) => {
     try {
       await invoke('api_save_model_config', {
@@ -109,11 +105,8 @@ export function SummaryModelSettings({ refetchTrigger }: SummaryModelSettingsPro
       });
 
       setModelConfig(config);
-
-      // Emit event to sync other components
       const { emit } = await import('@tauri-apps/api/event');
       await emit('model-config-updated', config);
-
       toast.success('Model settings saved successfully');
     } catch (error) {
       console.error('Error saving model config:', error);
@@ -123,6 +116,45 @@ export function SummaryModelSettings({ refetchTrigger }: SummaryModelSettingsPro
 
   return (
     <div className='flex flex-col gap-4'>
+      {/* Language Selection */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">App Interface Language</h3>
+              <p className="text-sm text-gray-600">Select the language for the menus and buttons</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <select
+                value={uiLanguage}
+                onChange={(e) => setUiLanguage(e.target.value)}
+                className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Summary Language</h3>
+              <p className="text-sm text-gray-600">Summaries will be generated in this language, regardless of the UI setting</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <select
+                value={summaryLanguage}
+                onChange={(e) => setSummaryLanguage(e.target.value)}
+                className="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>

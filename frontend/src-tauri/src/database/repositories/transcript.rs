@@ -23,15 +23,21 @@ impl TranscriptsRepository {
 
         let now = Utc::now();
 
+        // Calculate meeting duration from transcripts
+        let duration = transcripts.iter()
+            .map(|t| t.audio_end_time.unwrap_or(0.0))
+            .fold(0.0, f64::max);
+
         // 1. Create the new meeting
         let result = sqlx::query(
-            "INSERT INTO meetings (id, title, created_at, updated_at, folder_path) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO meetings (id, title, created_at, updated_at, folder_path, duration) VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(&meeting_id)
         .bind(meeting_title)
         .bind(now)
         .bind(now)
         .bind(&folder_path)
+        .bind(duration)
         .execute(&mut *transaction)
         .await;
 

@@ -702,16 +702,22 @@ async fn create_meeting_with_transcripts(
         .await
         .map_err(|e| anyhow!("Failed to start transaction: {}", e))?;
 
+    // Calculate duration
+    let duration = segments.iter()
+        .map(|s| s.audio_end_time.unwrap_or(0.0))
+        .fold(0.0, f64::max);
+
     // Insert meeting
     sqlx::query(
-        "INSERT INTO meetings (id, title, created_at, updated_at, folder_path)
-         VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO meetings (id, title, created_at, updated_at, folder_path, duration)
+         VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind(&meeting_id)
     .bind(title)
     .bind(now)
     .bind(now)
     .bind(&folder_path)
+    .bind(duration)
     .execute(&mut *tx)
     .await
     .map_err(|e| anyhow!("Failed to create meeting: {}", e))?;

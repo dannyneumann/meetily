@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Transcript, Summary } from '@/types';
 import { ModelConfig } from '@/components/ModelSettingsModal';
 import { CurrentMeeting, useSidebar } from '@/components/Sidebar/SidebarProvider';
+import { useConfig } from '@/contexts/ConfigContext';
 import { invoke as invokeTauri } from '@tauri-apps/api/core';
 import { toast } from 'sonner';
 import Analytics from '@/lib/analytics';
@@ -38,6 +39,7 @@ export function useSummaryGeneration({
   const [originalTranscript, setOriginalTranscript] = useState<string>('');
 
   const { startSummaryPolling, stopSummaryPolling } = useSidebar();
+  const { summaryLanguage } = useConfig();
 
   // Helper to get status message
   const getSummaryStatusMessage = useCallback((status: SummaryStatus) => {
@@ -113,6 +115,7 @@ export function useSummaryGeneration({
         overlap: 1000,
         customPrompt: customPrompt,
         templateId: selectedTemplate,
+        language: summaryLanguage,
       }) as any;
 
       const process_id = result.process_id;

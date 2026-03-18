@@ -11,6 +11,8 @@ interface UseCopyOperationsProps {
   meetingTitle: string;
   aiSummary: Summary | null;
   blockNoteSummaryRef: RefObject<BlockNoteSummaryViewRef>;
+  obsidianVaultPath?: string | null;
+  obsidianFolderPath?: string;
 }
 
 export function useCopyOperations({
@@ -19,6 +21,8 @@ export function useCopyOperations({
   meetingTitle,
   aiSummary,
   blockNoteSummaryRef,
+  obsidianVaultPath,
+  obsidianFolderPath,
 }: UseCopyOperationsProps) {
 
   // Helper function to fetch ALL transcripts for copying (not just paginated data)
@@ -189,8 +193,108 @@ export function useCopyOperations({
     }
   }, [aiSummary, meetingTitle, meeting, blockNoteSummaryRef]);
 
+  // Export to Obsidian
+  const handleExportObsidian = useCallback(async () => {
+    if (!obsidianVaultPath) {
+      toast.error("Please configure Obsidian Vault path in Settings first");
+      return;
+    }
+
+    try {
+      let summaryMarkdown = '';
+      if (blockNoteSummaryRef.current?.getMarkdown) {
+        summaryMarkdown = await blockNoteSummaryRef.current.getMarkdown();
+      } else if (aiSummary && 'markdown' in aiSummary) {
+        summaryMarkdown = (aiSummary as any).markdown || '';
+      }
+
+      const allTranscripts = await fetchAllTranscripts(meeting.id);
+      
+      // Format timestamps
+      const formatTime = (seconds: number | undefined): string => {
+        if (seconds === undefined) return "";
+        const totalSecs = Math.floor(seconds);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        return `[${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}]`;
+      };
+
+      const transcriptMarkdown = allTranscripts
+        .map(t => `${formatTime(t.audio_start_time)} ${t.text}`)
+        .join('\n\n');
+
+      // Build Obsidian Note content
+      const date = new Date(meeting.created_at);
+      const isoDate = date.toISOString().split('T')[0];
+      const displayDate = date.toLocaleString();
+      const durationStr = formatTime(meeting.duration);
+
+      const content = `---
+type: meeting-note
+date: ${isoDate}
+meeting_id: ${meeting.id}
+duration: "${durationStr}"
+tags: [meeting, meetily]
+---
+
+# ${meetingTitle}
+
+**Date:** ${displayDate}
+**Duration:** ${durationStr}
+**Source:** Meetily
+
+## Summary
+
+${summaryMarkdown || "_No summary available_"}
+
+---
+
+## Transcript
+
+${transcriptMarkdown || "_No transcript available_"}
+`;
+
+      const filenameOnly = `${isoDate} - ${meetingTitle}`.replace(/[\\/:"*?<>|]/g, '-');
+      const filenameWithFolder = obsidianFolderPath 
+        ? `${obsidianFolderPath}/${filenameOnly}.md`
+        : `${filenameOnly}.md`;
+
+      await invokeTauri('api_save_obsidian_note', {
+        vaultPath: obsidianVaultPath,
+        filename: filenameWithFolder,
+        content
+      });
+
+      // Try to open the note in Obsidian via URI scheme
+      try {
+        const vaultName = obsidianVaultPath.split(/[\\\/]/).pop();
+        if (vaultName) {
+          const encodedVault = encodeURIComponent(vaultName);
+          const encodedFile = encodeURIComponent(filenameWithFolder.replace(/\.md$/, ''));
+          const obsidianUri = `obsidian://open?vault=${encodedVault}&file=${encodedFile}`;
+          await invokeTauri('open_external_url', { url: obsidianUri });
+        }
+      } catch (uriError) {
+        console.warn('Failed to open Obsidian URI:', uriError);
+        // Don't show error to user, as the file was already saved successfully
+      }
+
+      toast.success(`Exported to Obsidian: ${filenameOnly}`);
+      
+      await Analytics.track('obsidian_exported', {
+        meeting_id: meeting.id,
+        vault_path: obsidianVaultPath
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to export to Obsidian:', error);
+      toast.error("Failed to export to Obsidian");
+    }
+  }, [obsidianVaultPath, aiSummary, meetingTitle, meeting, blockNoteSummaryRef, fetchAllTranscripts]);
+
   return {
     handleCopyTranscript,
     handleCopySummary,
+    handleExportObsidian,
   };
 }

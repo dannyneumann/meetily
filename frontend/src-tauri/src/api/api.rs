@@ -122,6 +122,7 @@ pub struct MeetingDetails {
     pub title: String,
     pub created_at: String,
     pub updated_at: String,
+    pub duration: Option<f64>,
     pub transcripts: Vec<MeetingTranscript>,
 }
 
@@ -146,6 +147,7 @@ pub struct MeetingMetadata {
     pub title: String,
     pub created_at: String,
     pub updated_at: String,
+    pub duration: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folder_path: Option<String>,
 }
@@ -317,6 +319,40 @@ async fn make_api_request<R: Runtime, T: for<'de> Deserialize<'de>>(
 }
 
 // API Commands for Tauri
+
+#[tauri::command]
+pub async fn api_save_obsidian_note(
+    vault_path: String,
+    filename: String,
+    content: String,
+) -> Result<(), String> {
+    use std::fs;
+    use std::path::PathBuf;
+
+    let vault = PathBuf::from(vault_path);
+    if !vault.exists() || !vault.is_dir() {
+        return Err("Obsidian vault path does not exist or is not a directory".to_string());
+    }
+
+    // Ensure the filename is safe and ends with .md
+    let safe_filename = filename.replace("/", "-").replace("\\", "-");
+    let mut file_path = vault.join(safe_filename);
+    if file_path.extension().and_then(|s| s.to_str()) != Some("md") {
+        file_path.set_extension("md");
+    }
+
+    // Ensure the destination directory exists (for subfolders within vault)
+    if let Some(parent) = file_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create destination directories: {}", e))?;
+    }
+
+    fs::write(&file_path, content)
+        .map_err(|e| format!("Failed to write Obsidian note: {}", e))?;
+
+    log_info!("✓ Obsidian note saved to: {:?}", file_path);
+    Ok(())
+}
 
 #[tauri::command]
 pub async fn api_get_meetings<R: Runtime>(
@@ -827,6 +863,7 @@ pub async fn api_get_meeting_metadata<R: Runtime>(
                 title: meeting.title,
                 created_at: meeting.created_at.0.to_rfc3339(),
                 updated_at: meeting.updated_at.0.to_rfc3339(),
+                duration: meeting.duration,
                 folder_path: meeting.folder_path,
             })
         }

@@ -31,7 +31,7 @@ import { cn, isOllamaNotInstalledError } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export interface ModelConfig {
-  provider: 'ollama' | 'groq' | 'claude' | 'openai' | 'openrouter' | 'builtin-ai' | 'custom-openai';
+  provider: 'ollama' | 'groq' | 'claude' | 'openai' | 'openrouter' | 'builtin-ai' | 'custom-openai' | 'mistral' | 'nvidia';
   model: string;
   whisperModel: string;
   apiKey?: string | null;
@@ -99,6 +99,19 @@ const GROQ_FALLBACK_MODELS = [
   'llama-3.1-70b-versatile',
   'mixtral-8x7b-32768',
   'gemma2-9b-it',
+];
+
+const MISTRAL_FALLBACK_MODELS = [
+  'mistral-large-latest',
+  'mistral-small-latest',
+  'codestral-latest',
+  'pixtral-large-latest',
+];
+
+const NVIDIA_FALLBACK_MODELS = [
+  'nvidia/llama-3.1-nemotron-70b-instruct',
+  'nvidia/mistral-nemo-12b-instruct-v1',
+  'nvidia/nemotron-4-340b-instruct',
 ];
 
 interface ModelSettingsModalProps {
@@ -227,6 +240,8 @@ export function ModelSettingsModal({
     groq: groqModels.length > 0 ? groqModels : GROQ_FALLBACK_MODELS,
     openai: openaiModels.length > 0 ? openaiModels : OPENAI_FALLBACK_MODELS,
     openrouter: openRouterModels.map((m) => m.id),
+    mistral: MISTRAL_FALLBACK_MODELS,
+    nvidia: NVIDIA_FALLBACK_MODELS,
     'builtin-ai': builtinAiModels.map((m) => m.name),
     'custom-openai': customOpenAIModel ? [customOpenAIModel] : [], // User specifies model manually
   };
@@ -235,7 +250,9 @@ export function ModelSettingsModal({
     modelConfig.provider === 'claude' ||
     modelConfig.provider === 'groq' ||
     modelConfig.provider === 'openai' ||
-    modelConfig.provider === 'openrouter';
+    modelConfig.provider === 'openrouter' ||
+    modelConfig.provider === 'mistral' ||
+    modelConfig.provider === 'nvidia';
 
   // Check if Ollama endpoint has changed but models haven't been fetched yet
   const ollamaEndpointChanged = modelConfig.provider === 'ollama' &&
@@ -876,6 +893,8 @@ export function ModelSettingsModal({
                 <SelectItem value="claude">Claude</SelectItem>
                 <SelectItem value="custom-openai">Custom Server (OpenAI)</SelectItem>
                 <SelectItem value="groq">Groq</SelectItem>
+                <SelectItem value="mistral">Mistral</SelectItem>
+                <SelectItem value="nvidia">Nvidia (NIM)</SelectItem>
                 <SelectItem value="ollama">Ollama</SelectItem>
                 <SelectItem value="openai">OpenAI</SelectItem>
                 <SelectItem value="openrouter">OpenRouter</SelectItem>

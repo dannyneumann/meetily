@@ -133,11 +133,15 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     groq: string | null;
     openai: string | null;
     openrouter: string | null;
+    mistral: string | null;
+    nvidia: string | null;
   }>({
     claude: null,
     groq: null,
     openai: null,
     openrouter: null,
+    mistral: null,
+    nvidia: null,
   });
 
   // Ollama models list and error state
@@ -343,7 +347,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadAllApiKeys = async () => {
       try {
-        const providers = ['claude', 'groq', 'openai', 'openrouter'];
+        const providers = ['claude', 'groq', 'openai', 'openrouter', 'mistral', 'nvidia'];
         const keys = await Promise.all(
           providers.map(p =>
             invoke<string>('api_get_api_key', { provider: p })
@@ -356,6 +360,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
           groq: keys[1],
           openai: keys[2],
           openrouter: keys[3],
+          mistral: keys[4],
+          nvidia: keys[5],
         });
         console.log('[ConfigContext] Loaded provider API keys');
       } catch (error) {
@@ -416,6 +422,8 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     groq: ['llama-3.3-70b-versatile'],
     openrouter: [],
     openai: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'],
+    mistral: ['mistral-large-latest', 'mistral-small-latest'],
+    nvidia: ['nvidia/llama-3.1-nemotron-70b-instruct'],
     'builtin-ai': [],
     'custom-openai': [],
   };
